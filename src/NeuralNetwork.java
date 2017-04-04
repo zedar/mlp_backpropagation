@@ -143,6 +143,7 @@ public class NeuralNetwork {
     for (int i = 0; i < expectedOutput.length; i++) {
       double d = expectedOutput[i];
       if (d < 0 || d > 1) {
+        System.out.println("IMPORTANT: correction in expected values");
         if (d < 0)
           expectedOutput[i] = 0 + epsilon;
         else
@@ -209,7 +210,7 @@ public class NeuralNetwork {
         resultOutputs[p] = output;
 
         for (int j = 0; j < expectedOutputs[p].length; j++) {
-          double err = Math.pow(output[j] - expectedOutputs[p][j], 2);
+          double err = Math.pow((output[j] < 0.5 ? 0.0 : 1.0) - expectedOutputs[p][j], 2);
           error += err;
         }
 

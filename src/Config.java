@@ -1,8 +1,10 @@
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
 public class Config {
   private int inLayerN = 2;
+  private int[] inLayerF;
   private int hiddenLayerN = 4;
   private int outLayerN = 3;
   private String trainDSPath;
@@ -20,6 +22,12 @@ public class Config {
     Map<String,String> argsm = parseArgs(args);
     String in = argsm.get("in");
     Integer inN = in != null ? Integer.valueOf(in) : null;
+    String inF = argsm.get("inf");
+    int[] inFi = null;
+    if (inF != null) {
+      String[] inFs = inF.split(",");
+      inFi = Arrays.stream(inFs).map(Integer::valueOf).mapToInt(Integer::intValue).toArray();
+    }
     String hidden = argsm.get("hidden");
     Integer hiddenN = hidden != null ? Integer.valueOf(hidden) : null;
     String out = argsm.get("out");
@@ -31,6 +39,10 @@ public class Config {
 
   public int getInLayerN() {
     return inLayerN;
+  }
+
+  public int[] getInLayerF() {
+    return inLayerF;
   }
 
   public int getHiddenLayerN() {

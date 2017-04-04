@@ -20,7 +20,7 @@ public class Main {
       System.out.println("Hidden layer must have at least 1 neuron.");
       return;
     }
-    double[][][] trainDS = loadTrainDS(cfg.getTrainDSPath(), cfg.getInLayerN(), cfg.getOutLayerN());
+    double[][][] trainDS = loadTrainDS(cfg.getTrainDSPath(), cfg.getInLayerN(), cfg.getInLayerF(), cfg.getOutLayerN());
     double[][] inDS = trainDS[0];
     double[][] outDS = trainDS[1];
 
@@ -38,7 +38,7 @@ public class Main {
     nn.run(maxRuns, minErrorCondition);
   }
 
-  private static double[][][] loadTrainDS(String trainDSPath, int inN, int outN) throws Exception {
+  private static double[][][] loadTrainDS(String trainDSPath, int inN, int[] inFs, int outN) throws Exception {
     ArrayList<double[]> in = new ArrayList<>();
     ArrayList<double[]> out = new ArrayList<>();
 
@@ -52,7 +52,11 @@ public class Main {
       }
       double[] inf = new double[inN];
       for (int i=0; i<inN; i++) {
-        inf[i] = Double.valueOf(features[i]);
+        int pos = i;
+        if (inFs != null && i < inFs.length) {
+          pos = inFs[i]-1;
+        }
+        inf[i] = Double.valueOf(features[pos]);
       }
       in.add(inf);
 
