@@ -6,7 +6,6 @@ public class NeuralNetwork {
     Locale.setDefault(Locale.ENGLISH);
   }
 
-  final boolean isTrained = false;
   final DecimalFormat df;
   final Random rand = new Random();
   final ArrayList<Neuron> inputLayer = new ArrayList<Neuron>();
@@ -22,24 +21,24 @@ public class NeuralNetwork {
   final double momentum = 0.7f;
 
   // Inputs for xor problem
-  final double inputs[][] = { { 1, 1 }, { 1, 0 }, { 0, 1 }, { 0, 0 } };
+  //final double inputs[][] = { { 1, 1 }, { 1, 0 }, { 0, 1 }, { 0, 0 } };
 
   // Corresponding outputs, xor training data
-  final double expectedOutputs[][] = { { 0, 1 }, { 1, 0 }, { 1, 0 }, { 0, 1 } };
-  double resultOutputs[][] = { { -1, -1 }, { -1, -1 }, { -1, -1 }, { -1, -1 } }; // dummy init
+  //final double expectedOutputs[][] = { { 0, 1 }, { 1, 0 }, { 1, 0 }, { 0, 1 } };
+  //double resultOutputs[][] = { { -1, -1 }, { -1, -1 }, { -1, -1 }, { -1, -1 } }; // dummy init
+  double[][] inputs;
+  double[][] expectedOutputs;
+  double[][] resultOutputs;
   double output[];
 
   // for weight update all
   final HashMap<String, Double> weightUpdate = new HashMap<String, Double>();
 
-  public static void main(String[] args) {
-    NeuralNetwork nn = new NeuralNetwork(2, 4, 2);
-    int maxRuns = 50000;
-    double minErrorCondition = 0.001;
-    nn.run(maxRuns, minErrorCondition);
-  }
+  public NeuralNetwork(int input, int hidden, int output, double[][] inputs, double[][] expectedOutputs) {
+    this.inputs =inputs;
+    this.expectedOutputs = expectedOutputs;
+    this.resultOutputs = new double[this.expectedOutputs.length][];
 
-  public NeuralNetwork(int input, int hidden, int output) {
     this.layers = new int[] { input, hidden, output };
     df = new DecimalFormat("#.0#");
 
@@ -93,11 +92,6 @@ public class NeuralNetwork {
     // reset id counters
     Neuron.counter = 0;
     Connection.counter = 0;
-
-    if (isTrained) {
-      trainedWeights();
-      updateAllWeights();
-    }
   }
 
   // random
@@ -260,53 +254,6 @@ public class NeuralNetwork {
 
   String weightKey(int neuronId, int conId) {
     return "N" + neuronId + "_C" + conId;
-  }
-
-  /**
-   * Take from hash table and put into all weights
-   */
-  public void updateAllWeights() {
-    // update weights for the output layer
-    for (Neuron n : outputLayer) {
-      ArrayList<Connection> connections = n.getAllInConnections();
-      for (Connection con : connections) {
-        String key = weightKey(n.id, con.id);
-        double newWeight = weightUpdate.get(key);
-        con.setWeight(newWeight);
-      }
-    }
-    // update weights for the hidden layer
-    for (Neuron n : hiddenLayer) {
-      ArrayList<Connection> connections = n.getAllInConnections();
-      for (Connection con : connections) {
-        String key = weightKey(n.id, con.id);
-        double newWeight = weightUpdate.get(key);
-        con.setWeight(newWeight);
-      }
-    }
-  }
-
-  // trained data
-  void trainedWeights() {
-    weightUpdate.clear();
-
-    weightUpdate.put(weightKey(3, 0), 1.03);
-    weightUpdate.put(weightKey(3, 1), 1.13);
-    weightUpdate.put(weightKey(3, 2), -.97);
-    weightUpdate.put(weightKey(4, 3), 7.24);
-    weightUpdate.put(weightKey(4, 4), -3.71);
-    weightUpdate.put(weightKey(4, 5), -.51);
-    weightUpdate.put(weightKey(5, 6), -3.28);
-    weightUpdate.put(weightKey(5, 7), 7.29);
-    weightUpdate.put(weightKey(5, 8), -.05);
-    weightUpdate.put(weightKey(6, 9), 5.86);
-    weightUpdate.put(weightKey(6, 10), 6.03);
-    weightUpdate.put(weightKey(6, 11), .71);
-    weightUpdate.put(weightKey(7, 12), 2.19);
-    weightUpdate.put(weightKey(7, 13), -8.82);
-    weightUpdate.put(weightKey(7, 14), -8.84);
-    weightUpdate.put(weightKey(7, 15), 11.81);
-    weightUpdate.put(weightKey(7, 16), .44);
   }
 
   public void printWeightUpdate() {
