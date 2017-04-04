@@ -20,12 +20,6 @@ public class NeuralNetwork {
   final double learningRate = 0.9f;
   final double momentum = 0.7f;
 
-  // Inputs for xor problem
-  //final double inputs[][] = { { 1, 1 }, { 1, 0 }, { 0, 1 }, { 0, 0 } };
-
-  // Corresponding outputs, xor training data
-  //final double expectedOutputs[][] = { { 0, 1 }, { 1, 0 }, { 1, 0 }, { 0, 1 } };
-  //double resultOutputs[][] = { { -1, -1 }, { -1, -1 }, { -1, -1 }, { -1, -1 } }; // dummy init
   double[][] inputs;
   double[][] expectedOutputs;
   double[][] resultOutputs;
@@ -195,7 +189,7 @@ public class NeuralNetwork {
     }
   }
 
-  void run(int maxSteps, double minError) {
+  int run(int maxSteps, double minError) {
     int i;
     // Train neural network until minError reached or maxSteps exceeded
     double error = 1;
@@ -224,15 +218,54 @@ public class NeuralNetwork {
     System.out.println("##### EPOCH " + i+"\n");
     if (i == maxSteps) {
       System.out.println("!Error training try again");
+      return -1;
     } else {
       printAllWeights();
       printWeightUpdate();
+      return 0;
     }
+  }
+
+  int test(double minError, double[][] testInputs, double[][] testExpectedOutputs) {
+    System.out.println("NN TEST RESULTS");
+    int correct = 0;
+    for (int p=0; p<testInputs.length; p++) {
+      setInput(testInputs[p]);
+      activate();
+      output = getOutput();
+
+      double err = 0.0;
+      for(int j=0; j<testExpectedOutputs[p].length; j++) {
+        err += Math.pow((output[j] < 0.5 ? 0.0 : 1.0) - testExpectedOutputs[p][j], 2);
+      }
+
+      System.out.print("INPUTS: ");
+      for (int x=0; x<testInputs[p].length; x++) {
+        System.out.print(testInputs[p][x] + " ");
+      }
+
+      System.out.print("EXPECTED: ");
+      for (int x=0; x<testExpectedOutputs[p].length; x++) {
+        System.out.print(testExpectedOutputs[p][x] + " ");
+      }
+
+      System.out.print("ACTUAL: ");
+      for (int x = 0; x < output.length; x++) {
+        System.out.print((output[x] < 0.5 ? 0.0 : 1.0) + " ");
+      }
+      System.out.print("ERR: " + err);
+      System.out.println();
+      if (err >= -minError && err <= minError) {
+        correct++;
+      }
+    }
+    System.out.println("CORRECTLY CLASSIFIED: " + df.format(((double)correct/(double) testExpectedOutputs.length)*100.0) + "%");
+    return 0;
   }
 
   void printResult()
   {
-    System.out.println("NN example with xor training");
+    System.out.println("NN EXECUTION RESULTS");
     for (int p = 0; p < inputs.length; p++) {
       System.out.print("INPUTS: ");
       for (int x = 0; x < layers[0]; x++) {

@@ -2,8 +2,6 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
 
 public class Main {
   public static void main(String[] args) throws Exception {
@@ -20,7 +18,11 @@ public class Main {
       System.out.println("Hidden layer must have at least 1 neuron.");
       return;
     }
-    double[][][] trainDS = loadTrainDS(cfg.getTrainDSPath(), cfg.getInLayerN(), cfg.getInLayerF(), cfg.getOutLayerN());
+    if (cfg.getTrainDSPath() == null) {
+      System.out.println("Undefined train data file.");
+      return;
+    }
+    double[][][] trainDS = loadDS(cfg.getTrainDSPath(), cfg.getInLayerN(), cfg.getInLayerF(), cfg.getOutLayerN());
     double[][] inDS = trainDS[0];
     double[][] outDS = trainDS[1];
 
@@ -36,9 +38,17 @@ public class Main {
     int maxRuns = 50000;
     double minErrorCondition = 0.001;
     nn.run(maxRuns, minErrorCondition);
+
+    if (cfg.getTestDSPath() != null) {
+      double[][][] testDS = loadDS(cfg.getTestDSPath(), cfg.getInLayerN(), cfg.getInLayerF(), cfg.getOutLayerN());
+      double[][] inTestDS = testDS[0];
+      double[][] outTestDS = testDS[1];
+
+      nn.test(minErrorCondition, inTestDS, outTestDS);
+    }
   }
 
-  private static double[][][] loadTrainDS(String trainDSPath, int inN, int[] inFs, int outN) throws Exception {
+  private static double[][][] loadDS(String trainDSPath, int inN, int[] inFs, int outN) throws Exception {
     ArrayList<double[]> in = new ArrayList<>();
     ArrayList<double[]> out = new ArrayList<>();
 
