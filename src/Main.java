@@ -1,5 +1,4 @@
-import java.io.BufferedReader;
-import java.io.FileReader;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 
@@ -25,6 +24,14 @@ public class Main {
     double[][][] trainDS = loadDS(cfg.getTrainDSPath(), cfg.getInLayerN(), cfg.getInLayerF(), cfg.getOutLayerN());
     double[][] inDS = trainDS[0];
     double[][] outDS = trainDS[1];
+    double[][] inTestDS = null;
+    double[][] outTestDS = null;
+
+    if (cfg.getTestDSPath() != null) {
+      double[][][] testDS = loadDS(cfg.getTestDSPath(), cfg.getInLayerN(), cfg.getInLayerF(), cfg.getOutLayerN());
+      inTestDS = testDS[0];
+      outTestDS = testDS[1];
+    }
 
     printDS("INPUT LAYER", inDS, 6);
     printDS("OUTPUT LAYER", outDS, 6);
@@ -34,17 +41,18 @@ public class Main {
       cfg.getHiddenLayerN(),
       cfg.getOutLayerN(),
       inDS,
-      outDS);
+      outDS,
+      inTestDS,
+      outTestDS);
+
     int maxRuns = 50000;
     double minErrorCondition = 0.001;
-    nn.run(maxRuns, minErrorCondition);
 
+    double error = nn.run(maxRuns, minErrorCondition, true);
+    double accuracy = 0;
     if (cfg.getTestDSPath() != null) {
-      double[][][] testDS = loadDS(cfg.getTestDSPath(), cfg.getInLayerN(), cfg.getInLayerF(), cfg.getOutLayerN());
-      double[][] inTestDS = testDS[0];
-      double[][] outTestDS = testDS[1];
-
-      nn.test(minErrorCondition, inTestDS, outTestDS);
+      System.out.println("NN TEST FINAL ACCURACY");
+      accuracy = nn.test(minErrorCondition, inTestDS, outTestDS, true);
     }
   }
 

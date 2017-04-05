@@ -1,3 +1,5 @@
+import java.io.FileWriter;
+import java.io.PrintWriter;
 import java.text.*;
 import java.util.*;
 
@@ -24,13 +26,20 @@ public class NeuralNetwork {
   private double[][] resultOutputs;
   private double[] output;
 
+  private double[][] testInputs;
+  private double[][] testExpectedOutputs;
+
   // for weight update all
   final HashMap<String, Double> weightUpdate = new HashMap<String, Double>();
 
-  public NeuralNetwork(int input, int hidden, int output, double[][] inputs, double[][] expectedOutputs) {
+  public NeuralNetwork(int input, int hidden, int output,
+                       double[][] inputs, double[][] expectedOutputs,
+                       double[][] testInputs, double[][] testExpectedOutputs) {
     this.inputs =inputs;
     this.expectedOutputs = expectedOutputs;
     this.resultOutputs = new double[this.expectedOutputs.length][];
+    this.testInputs = testInputs;
+    this.testExpectedOutputs = testExpectedOutputs;
 
     this.layers = new int[] { input, hidden, output };
 
@@ -192,28 +201,58 @@ public class NeuralNetwork {
    * Train neural network.
    * @param maxSteps if error does not coincide, max steps is a limit for iterations
    * @param maxError expected error rate
-   * @return -1 if error was grater than maxError, 0 otherwise
+   * @return squered error
    */
-  public int run(int maxSteps, double maxError) {
+  public double run(int maxSteps, double maxError, boolean printGnuplot) throws Exception {
+    PrintWriter foutError = null;
+    PrintWriter foutAccuracy = null;
+
     int i;
-    // Train neural network until maxError reached or maxSteps exceeded
     double error = 1;
-    for (i = 0; i < maxSteps && error > maxError; i++) {
-      error = 0;
-      for (int p = 0; p < inputs.length; p++) {
-        setInput(inputs[p]);
 
-        activate();
-
-        output = getOutput();
-        resultOutputs[p] = output;
-
-        for (int j = 0; j < expectedOutputs[p].length; j++) {
-          double err = Math.pow((output[j] < 0.5 ? 0.0 : 1.0) - expectedOutputs[p][j], 2);
-          error += err;
+    try {
+      if (printGnuplot) {
+        foutError = new PrintWriter(new FileWriter("plot_error.dat"));
+        foutError.println("#\tEPOCH\tERROR");
+        if (testInputs != null) {
+          foutAccuracy = new PrintWriter(new FileWriter("plot_accuracy.dat"));
+          foutAccuracy.println("#\tEPOCH\tACCURACY");
         }
+      }
+      // Train neural network until maxError reached or maxSteps exceeded
+      for (i = 0; i < maxSteps && error > maxError; i++) {
+        error = 0;
+        for (int p = 0; p < inputs.length; p++) {
+          setInput(inputs[p]);
 
-        applyBackpropagation(expectedOutputs[p]);
+          activate();
+
+          output = getOutput();
+          resultOutputs[p] = output;
+
+          for (int j = 0; j < expectedOutputs[p].length; j++) {
+            double err = Math.pow((output[j] < 0.5 ? 0.0 : 1.0) - expectedOutputs[p][j], 2);
+            error += err;
+          }
+
+          applyBackpropagation(expectedOutputs[p]);
+        }
+        if (printGnuplot) {
+          foutError.println("\t" + i + "\t" + error);
+          if (testInputs != null) {
+            double accuracy = test(maxError, testInputs, testExpectedOutputs, false);
+            foutAccuracy.println("\t" + i + "\t" + accuracy);
+          }
+        }
+      }
+    } catch (Exception ex) {
+      throw ex;
+    } finally {
+      if (foutError != null) {
+        foutError.close();
+      }
+      if (foutAccuracy != null) {
+        foutAccuracy.close();
       }
     }
 
@@ -223,12 +262,11 @@ public class NeuralNetwork {
     System.out.println("##### EPOCH " + i+"\n");
     if (i == maxSteps) {
       System.out.println("!Error training try again");
-      return -1;
     } else {
       printAllWeights();
       printWeightUpdate();
-      return 0;
     }
+    return error;
   }
 
   /**
@@ -236,10 +274,9 @@ public class NeuralNetwork {
    * @param minError expected max error
    * @param testInputs input dataset for testing neural network
    * @param testExpectedOutputs expected output for test dataset
-   * @return -1 if error, 0 otherwise
+   * @return percent of correctly classified observations
    */
-  public int test(double minError, double[][] testInputs, double[][] testExpectedOutputs) {
-    System.out.println("NN TEST RESULTS");
+  public double test(double minError, double[][] testInputs, double[][] testExpectedOutputs, boolean printResults) {
     int correct = 0;
     for (int p=0; p<testInputs.length; p++) {
       setInput(testInputs[p]);
@@ -251,28 +288,33 @@ public class NeuralNetwork {
         err += Math.pow((output[j] < 0.5 ? 0.0 : 1.0) - testExpectedOutputs[p][j], 2);
       }
 
-      System.out.print("INPUTS: ");
-      for (int x=0; x<testInputs[p].length; x++) {
-        System.out.print(testInputs[p][x] + " ");
-      }
+      if (printResults) {
+        System.out.print("INPUTS: ");
+        for (int x = 0; x < testInputs[p].length; x++) {
+          System.out.print(testInputs[p][x] + " ");
+        }
 
-      System.out.print("EXPECTED: ");
-      for (int x=0; x<testExpectedOutputs[p].length; x++) {
-        System.out.print(testExpectedOutputs[p][x] + " ");
-      }
+        System.out.print("EXPECTED: ");
+        for (int x = 0; x < testExpectedOutputs[p].length; x++) {
+          System.out.print(testExpectedOutputs[p][x] + " ");
+        }
 
-      System.out.print("ACTUAL: ");
-      for (double anOutput : output) {
-        System.out.print((anOutput < 0.5 ? 0.0 : 1.0) + " ");
+        System.out.print("ACTUAL: ");
+        for (double anOutput : output) {
+          System.out.print((anOutput < 0.5 ? 0.0 : 1.0) + " ");
+        }
+        System.out.print("ERR: " + err);
+        System.out.println();
       }
-      System.out.print("ERR: " + err);
-      System.out.println();
       if (err >= -minError && err <= minError) {
         correct++;
       }
     }
-    System.out.println("CORRECTLY CLASSIFIED: " + df.format(((double)correct/(double) testExpectedOutputs.length)*100.0) + "%");
-    return 0;
+    double accuracy = ((double)correct/(double) testExpectedOutputs.length)*100.0;
+    if (printResults) {
+      System.out.println("CORRECTLY CLASSIFIED: " + df.format(accuracy) + "%");
+    }
+    return accuracy;
   }
 
   public void printResult() {
