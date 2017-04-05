@@ -1,18 +1,28 @@
 public class Connection {
-  double weight = 0;
-  double prevDeltaWeight = 0; // for momentum
-  double deltaWeight = 0;
+  private static int counter = 0;
 
-  final Neuron leftNeuron;
-  final Neuron rightNeuron;
-  static int counter = 0;
-  final public int id; // auto increment, starts at 0
+  private double weight = 0;
+  private double prevDeltaWeight = 0; // for momentum
+  private double deltaWeight = 0;
+
+  private final Neuron fromNeuron;
+  private final Neuron toNeuron;
+
+  private final int id; // auto increment, starts at 0
 
   public Connection(Neuron fromN, Neuron toN) {
-    leftNeuron = fromN;
-    rightNeuron = toN;
+    fromNeuron = fromN;
+    toNeuron = toN;
     id = counter;
     counter++;
+  }
+
+  public static void resetCounter() {
+    counter = 0;
+  }
+
+  public int getId() {
+    return id;
   }
 
   public double getWeight() {
@@ -33,10 +43,10 @@ public class Connection {
   }
 
   public Neuron getFromNeuron() {
-    return leftNeuron;
+    return fromNeuron;
   }
 
   public Neuron getToNeuron() {
-    return rightNeuron;
+    return toNeuron;
   }
 }
