@@ -11,7 +11,7 @@ public class NeuralNetwork {
   private static final DecimalFormat df = new DecimalFormat("#.0#");
   private static final int RANDOM_WEIGHT_MULTIPLIER = 1;
   private static final double EPSILON = 0.00000000001;
-  private static final double LEARNING_RATE = 0.9f;
+  private static final double LEARNING_RATE = 0.5;//0.9f;
   private static final double MOMENTUM = 0.7f;
 
   private final Random rand = new Random();
