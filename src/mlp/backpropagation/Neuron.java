@@ -1,3 +1,5 @@
+package mlp.backpropagation;
+
 import java.util.*;
 
 public class Neuron {
@@ -7,10 +9,10 @@ public class Neuron {
   private final int id;  // auto increment, starts at 0
   private Connection biasConnection;
   private double bias = -1;
-  private double output = 0.0;
+  private double output = 1.0;
 
   private final ArrayList<Connection> inConnections = new ArrayList<Connection>();
-  private final HashMap<Integer,Connection> connectionLookup = new HashMap<Integer,Connection>();
+  private final HashMap<Integer, Connection> connectionLookup = new HashMap<Integer, Connection>();
 
   public Neuron(){
     id = counter;

@@ -1,3 +1,7 @@
+package mlp.backpropagation;
+
+import mlp.backpropagation.Neuron;
+
 public class Connection {
   private static int counter = 0;
 
