@@ -3,10 +3,11 @@ import java.util.*;
 public class Neuron {
   private static int counter = 0;
 
+  private int activationFunc = 1; // 1-sigmoid, 2-identity
   private final int id;  // auto increment, starts at 0
   private Connection biasConnection;
-  private final double bias = -1;
-  private double output;
+  private double bias = -1;
+  private double output = 0.0;
 
   private final ArrayList<Connection> inConnections = new ArrayList<Connection>();
   private final HashMap<Integer,Connection> connectionLookup = new HashMap<Integer,Connection>();
@@ -14,6 +15,12 @@ public class Neuron {
   public Neuron(){
     id = counter;
     counter++;
+  }
+
+  public Neuron(int activationFunc, double bias) {
+    this();
+    this.activationFunc = activationFunc;
+    this.bias = bias;
   }
 
   public static void resetCounter() {
@@ -36,14 +43,21 @@ public class Neuron {
 
       s = s + (weight*a);
     }
-    s = s + (biasConnection.getWeight()*bias);
+    if (biasConnection != null) {
+      s = s + (biasConnection.getWeight() * bias);
+    }
 
     output = g(s);
   }
 
 
   private double g(double x) {
-    return sigmoid(x);
+    if (activationFunc == 1) {
+      return sigmoid(x);
+    } else {
+      return x;
+    }
+
   }
 
   private double sigmoid(double x) {
@@ -81,4 +95,8 @@ public class Neuron {
   public void setOutput(double o){
     output = o;
   }
+  public int getActivationFunc() {
+    return activationFunc;
+  }
+
 }

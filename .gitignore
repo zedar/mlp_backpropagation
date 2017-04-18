@@ -2,3 +2,4 @@
 out
 .idea
 *.dat
+.DS_Store

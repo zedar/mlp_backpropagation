@@ -11,8 +11,8 @@ public class NeuralNetwork {
   private static final DecimalFormat df = new DecimalFormat("#.0#");
   private static final int RANDOM_WEIGHT_MULTIPLIER = 1;
   private static final double EPSILON = 0.00000000001;
-  private static final double LEARNING_RATE = 0.5;//0.9f;
-  private static final double MOMENTUM = 0.7f;
+  private static final double LEARNING_RATE = 0.07;//0.9f;
+  private static final double MOMENTUM = 0.0;//0.7f;
 
   private final Random rand = new Random();
 
@@ -24,6 +24,7 @@ public class NeuralNetwork {
   private double[][] inputs;
   private double[][] expectedOutputs;
   private double[][] resultOutputs;
+  private double[][] resultTestOutputs;
   private double[] output;
 
   private double[][] testInputs;
@@ -40,6 +41,9 @@ public class NeuralNetwork {
     this.resultOutputs = new double[this.expectedOutputs.length][];
     this.testInputs = testInputs;
     this.testExpectedOutputs = testExpectedOutputs;
+    if (testExpectedOutputs != null) {
+      resultTestOutputs = new double[this.testExpectedOutputs.length][];
+    }
 
     this.layers = new int[] { input, hidden, output };
 
@@ -48,16 +52,18 @@ public class NeuralNetwork {
     // neuron class
     //
     for (int i = 0; i < layers.length; i++) {
-      Neuron bias = new Neuron();
+      //Neuron bias = new Neuron(1, 1.0);
+      //Neuron biasOut = new Neuron(2, 1.0);
       if (i == 0) { // input layer
         for (int j = 0; j < layers[i]; j++) {
-          Neuron neuron = new Neuron();
+          Neuron neuron = new Neuron(1, 1.0);
           inputLayer.add(neuron);
         }
       } else if (i == 1) { // hidden layer
         for (int j = 0; j < layers[i]; j++) {
-          Neuron neuron = new Neuron();
+          Neuron neuron = new Neuron(1, 1.0);
           neuron.addInConnections(inputLayer);
+          Neuron bias = new Neuron(1, 1.0);
           neuron.addBiasConnection(bias);
           hiddenLayer.add(neuron);
         }
@@ -65,9 +71,10 @@ public class NeuralNetwork {
 
       else if (i == 2) { // output layer
         for (int j = 0; j < layers[i]; j++) {
-          Neuron neuron = new Neuron();
+          Neuron neuron = new Neuron(1, 1.0);
           neuron.addInConnections(hiddenLayer);
-          neuron.addBiasConnection(bias);
+          Neuron biasOut = new Neuron(1, 1.0);
+          neuron.addBiasConnection(biasOut);
           outputLayer.add(neuron);
         }
       } else {
@@ -98,7 +105,11 @@ public class NeuralNetwork {
 
   // random
   private double getRandom() {
-    return RANDOM_WEIGHT_MULTIPLIER * (rand.nextDouble() * 2 - 1); // [-1;1[
+    //return RANDOM_WEIGHT_MULTIPLIER * (rand.nextDouble() * 2 - 1); // [-1;1[
+    //return (Math.random() - 0.5) / 2;
+    double hi = 1.0;
+    double lo = -1.0;
+    return (Math.random() * (hi - lo)) + lo;
   }
 
   /**
@@ -131,6 +142,26 @@ public class NeuralNetwork {
       n.calculateOutput();
   }
 
+  private void normalizeZeroOne(double[][] data) {
+    double min = 0.0;
+    double max = 0.0;
+    for (int i = 0; i < data.length; i++) {
+      double d = data[i][0];
+      if (d < min) {
+        min = d;
+      }
+      if (d > max) {
+        max = d;
+      }
+
+    }
+    System.out.printf("NORMALIZE: MIN: %f, MAX: %f\n", min, max);
+    for (int i = 0; i < data.length; i++) {
+      //data[i][0] = (data[i][0] - min) / (max - min);
+      data[i][0] = (1.0)*(data[i][0] - min) / (max - min) + 0.0;
+    }
+  }
+
   /**
    * all output propagate back
    *
@@ -140,18 +171,17 @@ public class NeuralNetwork {
    *            bias is also updated here
    */
   private void applyBackpropagation(double expectedOutput[]) {
-
     // error check, normalize value ]0;1[
-    for (int i = 0; i < expectedOutput.length; i++) {
-      double d = expectedOutput[i];
-      if (d < 0 || d > 1) {
-        System.out.println("IMPORTANT: correction in expected values");
-        if (d < 0)
-          expectedOutput[i] = 0 + EPSILON;
-        else
-          expectedOutput[i] = 1 - EPSILON;
-      }
-    }
+//    for (int i = 0; i < expectedOutput.length; i++) {
+//      double d = expectedOutput[i];
+//      if (d < 0 || d > 1) {
+//        System.out.println("IMPORTANT: correction in expected values");
+//        if (d < 0)
+//          expectedOutput[i] = 0 + EPSILON;
+//        else
+//          expectedOutput[i] = 1 - EPSILON;
+//      }
+//    }
 
     int i = 0;
     for (Neuron n : outputLayer) {
@@ -161,12 +191,30 @@ public class NeuralNetwork {
         double ai = con.getFromNeuron().getOutput();
         double desiredOutput = expectedOutput[i];
 
-        double partialDerivative = -ak * (1 - ak) * ai
-          * (desiredOutput - ak);
-        double deltaWeight = -LEARNING_RATE * partialDerivative;
-        double newWeight = con.getWeight() + deltaWeight;
-        con.setDeltaWeight(deltaWeight);
-        con.setWeight(newWeight + MOMENTUM * con.getPrevDeltaWeight());
+        double partialDerivative = 0.0;
+        if (n.getActivationFunc() == 1) {
+          double partialDerivativeActivationFunc = ak*(1.0-ak);
+          partialDerivative = (ak - desiredOutput)*partialDerivativeActivationFunc*ai;//-ak * (1.0 - ak) * ai * (desiredOutput - ak);
+          double deltaWeight = -LEARNING_RATE * partialDerivative;
+          double newWeight = con.getWeight() + deltaWeight;
+          con.setDeltaWeight(deltaWeight);
+          con.setWeight(newWeight + MOMENTUM * con.getPrevDeltaWeight());
+        } else if (n.getActivationFunc() == 2) {
+          partialDerivative = -(desiredOutput-ak)*1.0*ai;
+          //double deltaWeight = -0.001 * partialDerivative;
+          double deltaWeight = -0.08 * partialDerivative;
+          double newWeight = con.getWeight() + deltaWeight;
+          //con.setDeltaWeight(deltaWeight);
+          //con.setWeight(newWeight + 0.008 * con.getPrevDeltaWeight());
+          if (newWeight < -50) {
+            System.out.printf("regularisation on the output weights: -1\n");
+            newWeight = -50.0;
+          } else if (newWeight > 50.0) {
+            System.out.printf("regularisation on the output weights: 1\n");
+            newWeight = 50.0;
+          }
+          con.setWeight(newWeight);
+        }
       }
       i++;
     }
@@ -184,11 +232,16 @@ public class NeuralNetwork {
           double desiredOutput = (double) expectedOutput[j];
           double ak = out_neu.getOutput();
           j++;
-          sumKoutputs = sumKoutputs
-            + (-(desiredOutput - ak) * ak * (1 - ak) * wjk);
+          if (out_neu.getActivationFunc() == 1) {
+            sumKoutputs = sumKoutputs
+                + (-(desiredOutput - ak) * ak * (1.0 - ak) * wjk);
+          } else {
+            sumKoutputs = sumKoutputs
+                + (-(desiredOutput - ak) * wjk);
+          }
         }
 
-        double partialDerivative = aj * (1 - aj) * ai * sumKoutputs;
+        double partialDerivative = aj * (1.0 - aj) * ai * sumKoutputs;
         double deltaWeight = -LEARNING_RATE * partialDerivative;
         double newWeight = con.getWeight() + deltaWeight;
         con.setDeltaWeight(deltaWeight);
@@ -206,8 +259,11 @@ public class NeuralNetwork {
   public double run(int maxSteps, double maxError, boolean printGnuplot) throws Exception {
     PrintWriter foutError = null;
     PrintWriter foutAccuracy = null;
+    PrintWriter foutTestEXP = null;
+    PrintWriter foutTestOUT = null;
+    PrintWriter foutTestACT = null;
 
-    int i;
+    int count = 0;
     double error = 1;
 
     try {
@@ -217,34 +273,124 @@ public class NeuralNetwork {
         if (testInputs != null) {
           foutAccuracy = new PrintWriter(new FileWriter("plot_accuracy.dat"));
           foutAccuracy.println("#\tEPOCH\tACCURACY");
+
+          normalizeZeroOne(testInputs);
+          normalizeZeroOne(testExpectedOutputs);
+        }
+        foutTestEXP = new PrintWriter(new FileWriter("plot_test_expected.dat"));
+        foutTestACT = new PrintWriter(new FileWriter("plot_test_actual.dat"));
+        foutTestOUT = new PrintWriter(new FileWriter("plot_train.dat"));
+      }
+      // Normalize output vector to [0,1]
+      normalizeZeroOne(inputs);
+      normalizeZeroOne(expectedOutputs);
+
+
+      double[][] originalInputs = inputs;
+      double[][] originalOutputs = expectedOutputs;
+
+      int numBelow = 0;
+      int numAbove = 0;
+      for (int i=0; i<originalInputs.length; i++) {
+        if (originalInputs[i][0] < 0.5) {
+          numBelow++;
+        } else {
+          numAbove++;
         }
       }
+      //int split = originalInputs.length /2;
+      int split = originalInputs.length;//numBelow;
+
+      inputs = new double[split][1];
+      expectedOutputs = new double[split][1];
+      for (int i=0, ii=0; i< originalInputs.length; i++) {
+        //if (originalInputs[i][0] <0.5) {
+          inputs[ii][0] = originalInputs[i][0];
+          expectedOutputs[ii][0] = originalOutputs[i][0];
+          ii++;
+        //}
+      }
       // Train neural network until maxError reached or maxSteps exceeded
-      for (i = 0; i < maxSteps && error > maxError; i++) {
+      for (int i = 0; i < maxSteps && error > maxError; i++) {
         error = 0;
         for (int p = 0; p < inputs.length; p++) {
-          setInput(inputs[p]);
+          //int inputNum = (int) ((Math.random() * inputs.length) - 0.001);
+          int inputNum = p;
+          setInput(inputs[inputNum]);
+          //setInput(inputs[p]);
 
           activate();
 
           output = getOutput();
           resultOutputs[p] = output;
 
-          for (int j = 0; j < expectedOutputs[p].length; j++) {
-            double err = Math.pow((output[j] < 0.5 ? 0.0 : 1.0) - expectedOutputs[p][j], 2);
+          for (int j = 0; j < expectedOutputs[inputNum].length; j++) {
+            double err = Math.pow((output[j]/* < 0.5 ? 0.0 : 1.0*/) - expectedOutputs[inputNum][j], 2);
             error += err;
           }
 
-          applyBackpropagation(expectedOutputs[p]);
+          applyBackpropagation(expectedOutputs[inputNum]);
         }
-        if (printGnuplot) {
-          foutError.println("\t" + i + "\t" + error);
-          if (testInputs != null) {
-            double accuracy = test(maxError, testInputs, testExpectedOutputs, false);
-            foutAccuracy.println("\t" + i + "\t" + accuracy);
+        count++;
+//        if (printGnuplot) {
+//          foutError.println("\t" + i + "\t" + error);
+//          if (testInputs != null) {
+//            double accuracy = test(maxError, testInputs, testExpectedOutputs, false);
+//            foutAccuracy.println("\t" + i + "\t" + accuracy);
+//          }
+//        }
+      }
+
+//      split = numAbove;
+//
+//      inputs = new double[split][1];
+//      expectedOutputs = new double[split][1];
+//      for (int i=0, ii=0; i< originalInputs.length; i++) {
+//        if (originalInputs[i][0] >=0.5) {
+//          inputs[ii][0] = originalInputs[i][0];
+//          expectedOutputs[ii][0] = originalOutputs[i][0];
+//          ii++;
+//        }
+//      }
+//      // Train neural network until maxError reached or maxSteps exceeded
+//      for (int i = 0; i < maxSteps && error > maxError; i++) {
+//        error = 0;
+//        for (int p = 0; p < inputs.length; p++) {
+//          setInput(inputs[p]);
+//
+//          activate();
+//
+//          output = getOutput();
+//          resultOutputs[p] = output;
+//
+//          for (int j = 0; j < expectedOutputs[p].length; j++) {
+//            double err = Math.pow((output[j]/* < 0.5 ? 0.0 : 1.0*/) - expectedOutputs[p][j], 2);
+//            error += err;
+//          }
+//
+//          applyBackpropagation(expectedOutputs[p]);
+//        }
+//        count++;
+//      }
+
+
+
+
+
+      if (printGnuplot) {
+        if (testInputs != null) {
+          test(maxError, testInputs, testExpectedOutputs, false);
+          for (int p = 0; p < testInputs.length; p++) {
+            foutTestEXP.println("\t" + testInputs[p][0] + "\t" + testExpectedOutputs[p][0]);
+            foutTestACT.println("\t" + testInputs[p][0] + "\t" + resultTestOutputs[p][0]);
+          }
+          for (int p=0; p<originalInputs.length; p++) {
+            foutTestOUT.println("\t" + originalInputs[p][0] + "\t" + originalOutputs[p][0]);
           }
         }
       }
+
+
     } catch (Exception ex) {
       throw ex;
     } finally {
@@ -254,13 +400,22 @@ public class NeuralNetwork {
       if (foutAccuracy != null) {
         foutAccuracy.close();
       }
+      if (foutTestEXP != null) {
+        foutTestEXP.close();
+      }
+      if (foutTestACT != null) {
+        foutTestACT.close();
+      }
+      if (foutTestOUT != null) {
+        foutTestOUT.close();;
+      }
     }
 
     printResult();
 
     System.out.println("Sum of squared errors = " + error);
-    System.out.println("##### EPOCH " + i+"\n");
-    if (i == maxSteps) {
+    System.out.println("##### EPOCH " + count+"\n");
+    if (count == maxSteps) {
       System.out.println("!Error training try again");
     } else {
       printAllWeights();
@@ -282,30 +437,31 @@ public class NeuralNetwork {
       setInput(testInputs[p]);
       activate();
       output = getOutput();
+      resultTestOutputs[p] = output;
 
       double err = 0.0;
       for(int j=0; j<testExpectedOutputs[p].length; j++) {
-        err += Math.pow((output[j] < 0.5 ? 0.0 : 1.0) - testExpectedOutputs[p][j], 2);
+        err += Math.pow((output[j]/* < 0.5 ? 0.0 : 1.0*/) - testExpectedOutputs[p][j], 2);
       }
 
-      if (printResults) {
-        System.out.print("INPUTS: ");
-        for (int x = 0; x < testInputs[p].length; x++) {
-          System.out.print(testInputs[p][x] + " ");
-        }
-
-        System.out.print("EXPECTED: ");
-        for (int x = 0; x < testExpectedOutputs[p].length; x++) {
-          System.out.print(testExpectedOutputs[p][x] + " ");
-        }
-
-        System.out.print("ACTUAL: ");
-        for (double anOutput : output) {
-          System.out.print((anOutput < 0.5 ? 0.0 : 1.0) + " ");
-        }
-        System.out.print("ERR: " + err);
-        System.out.println();
-      }
+//      if (printResults) {
+//        System.out.print("INPUTS: ");
+//        for (int x = 0; x < testInputs[p].length; x++) {
+//          System.out.print(testInputs[p][x] + " ");
+//        }
+//
+//        System.out.print("EXPECTED: ");
+//        for (int x = 0; x < testExpectedOutputs[p].length; x++) {
+//          System.out.print(testExpectedOutputs[p][x] + " ");
+//        }
+//
+//        System.out.print("ACTUAL: ");
+//        for (double anOutput : output) {
+//          System.out.print((anOutput/* < 0.5 ? 0.0 : 1.0*/) + " ");
+//        }
+//        System.out.print("ERR: " + err);
+//        System.out.println();
+//      }
       if (err >= -minError && err <= minError) {
         correct++;
       }

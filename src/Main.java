@@ -1,3 +1,5 @@
+import backpropagation.JavaMLP;
+
 import java.io.*;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -36,16 +38,21 @@ public class Main {
     printDS("INPUT LAYER", inDS, 6);
     printDS("OUTPUT LAYER", outDS, 6);
 
-    NeuralNetwork nn = new NeuralNetwork(
-      cfg.getInLayerN(),
-      cfg.getHiddenLayerN(),
-      cfg.getOutLayerN(),
-      inDS,
-      outDS,
-      inTestDS,
-      outTestDS);
+    variant1(cfg, inDS, outDS, inTestDS, outTestDS);
 
-    int maxRuns = 50000;
+  }
+
+  private static void variant1(Config cfg, double[][] inDS, double[][] outDS, double[][] inTestDS, double[][] outTestDS) throws Exception {
+    NeuralNetwork nn = new NeuralNetwork(
+        cfg.getInLayerN(),
+        cfg.getHiddenLayerN(),
+        cfg.getOutLayerN(),
+        inDS,
+        outDS,
+        inTestDS,
+        outTestDS);
+
+    int maxRuns = 150000;//50000;
     double minErrorCondition = 0.001;
 
     double error = nn.run(maxRuns, minErrorCondition, true);
@@ -54,6 +61,16 @@ public class Main {
       System.out.println("NN TEST FINAL ACCURACY");
       accuracy = nn.test(minErrorCondition, inTestDS, outTestDS, true);
     }
+  }
+
+  private static void variant2(Config cfg, double[][] inDS, double[][] outDS, double[][] inTestDS, double[][] outTestDS) throws Exception {
+    double[] expectedOutputs = new double[outDS.length];
+    for (int i = 0; i < outDS.length; i++) {
+      expectedOutputs[i] = outDS[i][0];
+    }
+
+    JavaMLP.run(cfg.getInLayerN(), cfg.getHiddenLayerN(), cfg.getOutLayerN(), inDS, expectedOutputs, inTestDS, outTestDS);
+
   }
 
   private static double[][][] loadDS(String trainDSPath, int inN, int[] inFs, int outN) throws Exception {
@@ -78,13 +95,16 @@ public class Main {
       }
       in.add(inf);
 
-      int outv = Integer.valueOf(features[features.length-1]);
-      if (outv < 0 || outv > outN) {
-        throw new IllegalArgumentException("Invalid output feature value. Not inline with number of output neurons");
-      }
+//      int outv = Integer.valueOf(features[features.length-1]);
+//      if (outv < 0 || outv > outN) {
+//        throw new IllegalArgumentException("Invalid output feature value. Not inline with number of output neurons");
+//      }
+//      double[] outf = new double[outN];
+//      Arrays.fill(outf, 0.0);
+//      outf[outv-1] = 1.0;
       double[] outf = new double[outN];
       Arrays.fill(outf, 0.0);
-      outf[outv-1] = 1.0;
+      outf[0] = Double.valueOf(features[features.length-1]);
       out.add(outf);
     }
     return new double[][][] {in.toArray(new double[][]{{}}), out.toArray(new double[][]{{}})};
